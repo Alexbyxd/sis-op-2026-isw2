@@ -26,6 +26,7 @@ El sistema actúa como un servicio centralizado de almacenamiento on-premise (in
 │  - Referenciación universal por UUID                         │
 │  - Verificación de integridad (SHA-256 Checksum)             │
 │  - URLs firmadas temporales HMAC para Frontend (sin tokens)  │
+│  - Documentación interactiva Offline con Scalar (/scalar)    │
 └──────────────────────────────┬───────────────────────────────┘
                                │
                 ┌──────────────┴──────────────┐
@@ -54,7 +55,8 @@ El sistema actúa como un servicio centralizado de almacenamiento on-premise (in
 - **Lenguaje:** PHP 8.4 (con extensiones `pdo_pgsql`, `pgsql`)
 - **Base de Datos:** PostgreSQL 16 ejecutándose en contenedor con **Podman**
 - **Autenticación:** Laravel Sanctum (API Tokens)
-- **Testing:** Pest PHP (56 tests automatizados con 100% de cobertura funcional)
+- **Documentación Interactiva:** Scalar API Reference (100% Offline / Self-Hosted)
+- **Testing:** Pest PHP (59 tests automatizados con 100% de cobertura funcional)
 - **Análisis Estático:** Larastan / PHPStan (Nivel tipado estricto)
 - **Estándar de Código:** Laravel Pint (PSR-12 / Laravel Preset)
 
@@ -100,6 +102,22 @@ php artisan migrate --seed
 php artisan serve
 ```
 El servidor quedará disponible en `http://127.0.0.1:8000`.
+
+---
+
+## 📚 Documentación Interactiva con Scalar (100% Offline)
+
+El sistema incluye la interfaz moderna e interactiva de **Scalar** configurada para operar **totalmente desconectada de internet (on-premise / intranet policial)**.
+
+### ¿Cómo acceder?
+Abrí tu navegador en:
+👉 **`http://localhost:8000/scalar`**
+
+### ¿Cómo funciona en modo offline?
+- **Bundle JS Local:** El archivo standalone de Scalar reside localmente en `public/vendor/scalar/scalar.js`. No realiza ninguna petición a CDNs como jsDelivr o unpkg.
+- **Especificación OpenAPI Local:** Lee el esquema OpenAPI 3.1 directamente desde `storage/app/openapi.json`.
+- **Sin Fuentes Remotas ni Telemetría:** Se desactivaron las fuentes remotas (`withDefaultFonts: false`) y la telemetría (`telemetry: false`) para garantizar privacidad y velocidad instantánea en redes locales aisladas.
+- **Cliente HTTP Integrado:** Podés probar las solicitudes directamente desde la interfaz web introduciendo el Bearer Token obtenido en `/api/v1/auth/login`.
 
 ---
 
@@ -155,7 +173,7 @@ Carga un nuevo archivo para el sistema autenticado.
 - **Headers:** `Authorization: Bearer <token>`, `Accept: application/json`
 - **Content-Type:** `multipart/form-data`
 - **Body:**
-  - `file` (File, requerido): Archivo binario (.docx, .xls, .pdf, .jpg, .png, etc.).
+  - `file` (File, requerido): Archivo binario (.docx, .xls, .pdf, .jpg, .png, etc.). Límite máximo: 50 MB (configurable).
   - `metadata` (JSON Array/Object, opcional): Metadatos contextuales (e.g. `{"caso": "EXP-2026", "oficial": "OF-432"}`).
 
 **Response (201 Created):**
@@ -191,15 +209,64 @@ Carga un nuevo archivo para el sistema autenticado.
 
 ---
 
-#### `GET /api/v1/files`
-Lista los archivos pertenecientes exclusivamente al sistema autenticado.
+#### `GET /api/v1/files` (Listado, Búsqueda y Paginación)
 
-- **Query Params:**
-  - `page`: Número de página (default: 1)
-  - `per_page`: Cantidad por página (default: 15)
-  - `is_active`: `true` | `false`
-  - `extension`: Filtro por extensión (e.g. `pdf`, `docx`)
-  - `search`: Búsqueda por nombre original
+Retorna la lista de archivos pertenecientes **estrictamente al sistema autenticado** con soporte completo de filtros y paginación.
+
+##### Parámetros de Consulta (Query Parameters):
+
+| Parámetro | Tipo | Requerido | Default | Descripción |
+|---|---|---|---|---|
+| `search` | `string` | No | `null` | Realiza una búsqueda parcial (`LIKE %search%`) sobre el nombre original del archivo (ej. `?search=informe`). |
+| `extension` | `string` | No | `null` | Filtra por extensión sin punto (ej. `?extension=pdf` o `?extension=docx`). |
+| `is_active` | `boolean` | No | `null` | Filtra por archivos activos (`?is_active=true`) o dados de baja (`?is_active=false`). |
+| `page` | `integer` | No | `1` | Número de página a consultar. |
+| `per_page` | `integer` | No | `15` | Cantidad de registros por página (ej. `?per_page=10`). |
+
+##### Ejemplo de Solicitud con Filtros Combinados:
+```http
+GET /api/v1/files?search=acta&extension=pdf&is_active=true&page=1&per_page=10
+Authorization: Bearer 1|qW89uXp...
+Accept: application/json
+```
+
+##### Ejemplo de Respuesta (200 OK):
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "uuid": "7a355651-7ae1-4876-b9dc-3221971fa84c",
+      "original_name": "acta_decomiso_001.pdf",
+      "mime_type": "application/pdf",
+      "extension": "pdf",
+      "size_bytes": 1048576,
+      "size_human": "1 MB",
+      "is_active": true,
+      "checksum_sha256": "4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a",
+      "metadata": {
+        "departamento": "Antinarcóticos",
+        "acta_numero": "ACT-2026-88"
+      },
+      "urls": {
+        "direct_view": "http://127.0.0.1:8000/api/v1/files/7a355651.../view",
+        "direct_download": "http://127.0.0.1:8000/api/v1/files/7a355651.../download",
+        "signed_view": "http://127.0.0.1:8000/api/signed/files/7a355651.../view?expires=...&signature=...",
+        "signed_download": "http://127.0.0.1:8000/api/signed/files/7a355651.../download?expires=...&signature=...",
+        "signed_expires_at": "2026-09-20T17:45:00+00:00"
+      },
+      "created_at": "2026-09-20T17:15:00+00:00",
+      "updated_at": "2026-09-20T17:15:00+00:00"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "last_page": 4,
+    "per_page": 10,
+    "total": 35
+  }
+}
+```
 
 ---
 
@@ -258,7 +325,7 @@ Elimina físicamente el archivo del disco de almacenamiento y purga el registro 
 
 ## 🧪 Pruebas Automatizadas
 
-Para correr toda la suite de pruebas unitarias y de integración con Pest:
+Para correr toda la suite de pruebas unitarias y de integración con Pest (59 tests):
 
 ```bash
 ./vendor/bin/pest
