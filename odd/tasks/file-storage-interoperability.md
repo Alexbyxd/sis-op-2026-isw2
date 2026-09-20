@@ -20,15 +20,16 @@ The police department operates multiple independent internal systems (System 1: 
 
 ## Checklist
 
-- [ ] `TASK-1`: Setup Podman container for PostgreSQL, configure environment (`.env`), and install dependencies (Sanctum, Pest PHP).
-- [ ] `TASK-2`: Create database migrations (Users/Tenants, Files table with UUID and metadata) and seeders for `sistema1` and `sistema2`.
-- [ ] `TASK-3`: Implement Authentication API (`POST /api/v1/auth/login`) with Sanctum tokens and multi-tenant authorization guards.
-- [ ] `TASK-4`: Implement File Upload, Listing, Metadata, Status toggle, and Physical Deletion endpoints with strict validation and tenant isolation.
-- [ ] `TASK-5`: Implement Direct Binary Streaming (`/view`, `/download`) and HMAC Temporary Signed URLs (`/signed/files/{uuid}/view`, `/signed/files/{uuid}/download`).
-- [ ] `TASK-6`: Write comprehensive Pest test suite covering auth, tenant isolation, file uploads, size limits, downloads, signed URLs, and physical deletion.
+- [x] `TASK-1`: Setup Podman container for PostgreSQL, configure environment (`.env`), and install dependencies (Sanctum, Pest PHP).
+- [x] `TASK-2`: Create database migrations (Users/Tenants, Files table with UUID and metadata) and seeders for `sistema1` and `sistema2`.
+- [x] `TASK-3`: Implement Authentication API (`POST /api/v1/auth/login`) with Sanctum tokens and multi-tenant authorization guards.
+- [x] `TASK-4`: Implement File Upload, Listing, Metadata, Status toggle, and Physical Deletion endpoints with strict validation and tenant isolation.
+- [x] `TASK-5`: Implement Direct Binary Streaming (`/view`, `/download`) and HMAC Temporary Signed URLs (`/signed/files/{uuid}/view`, `/signed/files/{uuid}/download`).
+- [x] `TASK-6`: Write comprehensive Pest test suite covering auth, tenant isolation, file uploads, size limits, downloads, signed URLs, and physical deletion.
 
 ## Verification Evidence
-- [ ] Podman PostgreSQL container running and accepting connections.
-- [ ] Database migrations & seeders executed cleanly.
-- [ ] Pest test suite passing with 100% green tests.
-- [ ] Larastan / Pint passing.
+- [x] Podman PostgreSQL container running (`police_storage_postgres` on port 5432).
+- [x] Database migrations & seeders executed cleanly on PostgreSQL (`sistema1` & `sistema2` created).
+- [x] Pest test suite passing with 56/56 green tests (23 new API feature tests + 33 existing tests).
+- [x] Larastan (PHPStan) static analysis passing with 0 errors.
+- [x] Laravel Pint code style checks passing with 0 formatting issues.
